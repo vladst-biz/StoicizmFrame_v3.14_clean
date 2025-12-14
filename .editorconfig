@@ -1,4 +1,7 @@
-﻿root = true
+Set-Location D:\StoicizmFrame_v3.14_clean
+
+@'
+root = true
 
 [*]
 charset = utf-8
@@ -7,3 +10,7 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
+'@ | Out-File -FilePath ".editorconfig" -Encoding utf8NoBOM
+
+git add .editorconfig
+git commit -m "EDITORCONFIG_FIXED: saved in pure UTF-8 LF without BOM"
