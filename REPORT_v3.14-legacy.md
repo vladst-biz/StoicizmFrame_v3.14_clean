@@ -1,4 +1,4 @@
-﻿# StoicizmFrame v3.14-legacy — Архитектурный отчёт
+# StoicizmFrame v3.14-legacy — Архитектурный отчёт
 
 ## CHANGELOG.md — Журнал фиксации
 - EDITORCONFIG_ADDED — гигиена
