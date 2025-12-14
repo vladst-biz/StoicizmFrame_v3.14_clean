@@ -1,4 +1,4 @@
-﻿# StoicizmFrame v3.14-legacy — Паспорт узла
+# StoicizmFrame v3.14-legacy — Паспорт узла
 
 ## Завершение цикла v3.14_clean
 - **Гигиена** — .editorconfig, .gitignore
