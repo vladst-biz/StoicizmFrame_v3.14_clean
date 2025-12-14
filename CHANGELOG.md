@@ -1,4 +1,4 @@
-﻿# StoicizmFrame v3.14_clean — CHANGELOG
+# StoicizmFrame v3.14_clean — CHANGELOG
 
 ## Коммиты и артефакты
 
