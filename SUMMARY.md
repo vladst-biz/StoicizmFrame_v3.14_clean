@@ -1,4 +1,4 @@
-﻿# SUMMARY — Publication Cycle v3.16
+# SUMMARY — Publication Cycle v3.16
 
 ## Назначение
 Итоговый узел публикационного цикла.

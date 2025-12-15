@@ -1,4 +1,4 @@
-﻿# EPILOGUE — Publication Cycle v3.16
+# EPILOGUE — Publication Cycle v3.16
 
 ## Назначение
 Философское завершение квартета публикационного цикла.

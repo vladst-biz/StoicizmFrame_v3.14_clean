@@ -1,4 +1,4 @@
-﻿# SCENE_004 — Publication Cycle v3.16
+# SCENE_004 — Publication Cycle v3.16
 
 ## Назначение
 Четвёртая сцена цикла публикации.
