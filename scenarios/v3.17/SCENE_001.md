@@ -1,4 +1,4 @@
-﻿# SCENE_001 — Cycle v3.17
+# SCENE_001 — Cycle v3.17
 
 ## Назначение
 Первая сцена новой волны StoicizmFrame.

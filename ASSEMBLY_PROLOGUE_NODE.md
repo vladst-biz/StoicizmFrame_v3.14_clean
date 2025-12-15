@@ -1,4 +1,4 @@
-﻿# ASSEMBLY_PROLOGUE_NODE — Cycle v3.17
+# ASSEMBLY_PROLOGUE_NODE — Cycle v3.17
 
 ## Назначение
 Пролог новой волны развития StoicizmFrame.
