@@ -1,4 +1,4 @@
-﻿# REPORT_v3.17 — Cycle Documentation
+# REPORT_v3.17 — Cycle Documentation
 
 ## Назначение
 Отчётный узел цикла v3.17.
