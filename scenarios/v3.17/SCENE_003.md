@@ -1,4 +1,4 @@
-﻿# SCENE_003 — Cycle v3.17
+# SCENE_003 — Cycle v3.17
 
 ## Назначение
 Третья сцена новой волны StoicizmFrame.
