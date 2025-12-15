@@ -1,4 +1,4 @@
-﻿# REPORT_v3.15 — Evolution
+# REPORT_v3.15 — Evolution
 
 ## Назначение
 Отчёт по циклу Evolution.

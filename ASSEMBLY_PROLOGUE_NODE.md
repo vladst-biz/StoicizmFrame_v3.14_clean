@@ -1,4 +1,4 @@
-﻿# ASSEMBLY_PROLOGUE_NODE — v3.16
+# ASSEMBLY_PROLOGUE_NODE — v3.16
 
 ## Назначение
 Пролог нового цикла v3.16.

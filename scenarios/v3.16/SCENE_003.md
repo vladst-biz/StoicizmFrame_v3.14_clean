@@ -1,4 +1,4 @@
-﻿# SCENE_003 — Publication Cycle v3.16
+# SCENE_003 — Publication Cycle v3.16
 
 ## Назначение
 Третья сцена цикла публикации.

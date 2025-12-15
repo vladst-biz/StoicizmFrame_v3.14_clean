@@ -1,4 +1,4 @@
-﻿# SCENE_001 — Publication Cycle v3.16
+# SCENE_001 — Publication Cycle v3.16
 
 ## Назначение
 Первая сцена нового цикла публикации.

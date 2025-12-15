@@ -1,4 +1,4 @@
-﻿# LEGACY — Publication Cycle v3.16
+# LEGACY — Publication Cycle v3.16
 
 ## Назначение
 Финальный узел квартета публикационного цикла.
