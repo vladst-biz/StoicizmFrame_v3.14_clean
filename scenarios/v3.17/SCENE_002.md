@@ -1,4 +1,4 @@
-﻿# SCENE_002 — Cycle v3.17
+# SCENE_002 — Cycle v3.17
 
 ## Назначение
 Вторая сцена новой волны StoicizmFrame.
