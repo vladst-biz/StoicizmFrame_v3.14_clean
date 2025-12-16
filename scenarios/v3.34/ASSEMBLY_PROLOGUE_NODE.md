@@ -1,0 +1,4 @@
+# ASSEMBLY_PROLOGUE_NODE v3.34
+## Пролог экспедиции
+ASSEMBLY_INITIALIZED_v3.34
+Created: 12/16/2025 23:57:50
