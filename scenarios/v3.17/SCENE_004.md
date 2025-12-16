@@ -1,4 +1,4 @@
-﻿# SCENE_004 — Cycle v3.17
+# SCENE_004 — Cycle v3.17
 
 ## Назначение
 Четвёртая сцена новой волны StoicizmFrame.
