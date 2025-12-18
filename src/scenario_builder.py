@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-scenario_builder.py — модуль для построения сценариев видео.
-"""
+# src/scenario_builder.py
+# StoicizmFrame v3.14 — Scenario Builder
+# Кодировка: UTF-8 LF без BOM
 
-def build_scenario(title: str, scenes: list) -> dict:
+def build_scene(donors):
     """
-    Формирует сценарий из списка сцен.
-    :param title: название сценария
-    :param scenes: список сцен
-    :return: словарь сценария
+    Формируем структуру сцены для заявки Foundry.
+    donors — список источников (тексты, цитаты, рецепты).
+    Возвращаем идентификатор сцены.
     """
-    return {
-        "title": title,
-        "scenes": scenes,
-        "length": len(scenes)
-    }
+    if not donors:
+        return "SCENE_EMPTY"
+    # Простая логика: каждая сцена получает уникальный идентификатор
+    scene_id = f"SCENE_{str(len(donors)).zfill(3)}"
+    return scene_id
