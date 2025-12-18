@@ -1,4 +1,4 @@
-﻿# ASSEMBLY_PROLOGUE_NODE v3.18
+# ASSEMBLY_PROLOGUE_NODE v3.18
 
 ## Пролог экспедиции
 Сегодня, 16 декабря 2025 года, мы открыли новую волну StoicizmFrame.  
