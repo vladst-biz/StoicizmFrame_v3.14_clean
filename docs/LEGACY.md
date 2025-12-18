@@ -13,3 +13,8 @@
 - 18.12.2025 — переписан voice_adapter.py.
 - Убран pydub.
 - Логика подготовки озвучки адаптирована под Foundry.
+## Узел: LEGACY_FINALIZED — переход на Foundry завершён
+- 18.12.2025 — переписаны tests/test_media.py, scenario_builder.py, layout_composer.py, voice_adapter.py.
+- Удалены MoviePy и pydub.
+- Все ключевые модули адаптированы под Foundry.
+- Цикл v3.14_clean закрыт архитектурно.
