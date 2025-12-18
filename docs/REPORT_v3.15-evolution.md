@@ -2,7 +2,7 @@
 # StoicizmFrame v3.15 — Evolution
 # Кодировка: UTF-8 LF без BOM
 
-## Итоговый отчёт цикла v3.15_evolution
+## Итоговый отчёт
 - SCENE_004.md — старт генерации
 - SCENE_005.md — эволюция нарратива
 - SCENE_006.md — эволюция визуала
