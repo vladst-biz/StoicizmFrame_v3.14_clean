@@ -1,12 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-layout_composer.py — модуль для визуальной компоновки сцен.
-"""
+# src/layout_composer.py
+# StoicizmFrame v3.14 — Layout Composer
+# Кодировка: UTF-8 LF без BOM
 
-def compose_layout(scenario: dict) -> str:
+def compose_layout(scenes, transitions=None, effects=None):
     """
-    Генерирует описание визуального оформления.
-    :param scenario: словарь сценария
-    :return: строка с описанием компоновки
+    Формируем структуру переходов и эффектов для заявки Foundry.
+    scenes — список идентификаторов сцен.
+    transitions — список переходов (по умолчанию пустой).
+    effects — список эффектов (по умолчанию пустой).
+    Возвращаем словарь для Foundry.
     """
-    return f"Layout for scenario '{scenario['title']}' with {scenario['length']} scenes."
+    if transitions is None:
+        transitions = []
+    if effects is None:
+        effects = []
+
+    return {
+        "scenes": scenes,
+        "transitions": transitions,
+        "effects": effects
+    }
