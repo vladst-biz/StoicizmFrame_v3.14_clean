@@ -1,0 +1,16 @@
+branch: stoicizm
+output_format: mp4
+resolution: 1080p
+fps: 30
+
+publish:
+  telegram:
+    enabled: true
+    channel: "StoicizmFrame"
+  youtube:
+    enabled: true
+    title_prefix: "StoicizmFrame — "
+    tags:
+      - стоицизм
+      - философия
+      - смысл
