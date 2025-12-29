@@ -1,0 +1,1 @@
+def apply(text, *args): return text
