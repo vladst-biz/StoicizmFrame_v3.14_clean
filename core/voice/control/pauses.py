@@ -1,0 +1,1 @@
+PAUSES = ["short", "medium", "long"]

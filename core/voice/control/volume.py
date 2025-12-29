@@ -1,0 +1,1 @@
+VOLUME = ["low", "normal", "high"]

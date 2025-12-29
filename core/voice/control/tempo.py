@@ -1,0 +1,1 @@
+TEMPO = ["slow", "medium", "fast"]
