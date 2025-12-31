@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.envFile": "/.env",
+        "python.analysis.extraPaths": [
+            "D:/StoicizmFrame_v3.14_clean"
+        ],
+        "python.languageServer": "Pylance",
+        "python.terminal.activateEnvironment": true,
+        "python.terminal.activateEnvInCurrentTerminal": true
+    }
+}
