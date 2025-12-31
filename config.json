@@ -1,0 +1,23 @@
+{
+    "azure_openai": {
+        "endpoint": "https://YOUR-ENDPOINT.openai.azure.com/",
+        "api_key": "YOUR_API_KEY",
+        "deployment_gpt": "gpt-5.2",
+        "deployment_vision": "gpt-vision",
+        "deployment_image": "flux",
+        "api_version": "2024-02-15-preview"
+    },
+    "azure_speech": {
+        "region": "YOUR_REGION",
+        "key": "YOUR_SPEECH_KEY",
+        "voice": "en-US-GuyNeural"
+    },
+    "azure_storage": {
+        "connection_string": "YOUR_STORAGE_CONNECTION_STRING",
+        "container_text": "text",
+        "container_audio": "audio",
+        "container_images": "images",
+        "container_video": "video",
+        "container_packages": "packages"
+    }
+}
