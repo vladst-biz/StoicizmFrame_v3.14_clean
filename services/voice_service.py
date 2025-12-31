@@ -1,4 +1,4 @@
-from infrastructure.azure_voice_service import AzureVoiceService
+from infrastructure.azure_voice_service import AzureVoiceService  # type: ignore
 
 class VoiceService:
     def __init__(self):
