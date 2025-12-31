@@ -1,0 +1,98 @@
+{
+    "topic": "Тестовая тема",
+    "raw": {
+        "topic": "Тестовая тема",
+        "raw_scene": "Черновой сценарий по теме: Тестовая тема",
+        "meta": {
+            "source": "llm_stub",
+            "status": "draft"
+        }
+    },
+    "reframed": "Черновой сценарий по теме: Тестовая тема",
+    "timeline": [
+        {
+            "id": 1,
+            "text": "Черновой сценарий по теме: Тестовая тема",
+            "duration": 5
+        }
+    ],
+    "visual": {
+        "style": "stoic",
+        "tempo": "slow",
+        "colors": "neutral"
+    },
+    "voice": {
+        "type": "stoic_elder",
+        "tempo": "slow",
+        "emotion": "calm",
+        "pauses": "medium",
+        "intonation": "deep_resonance"
+    },
+    "product": {
+        "timeline": [
+            {
+                "id": 1,
+                "text": "Черновой сценарий по теме: Тестовая тема",
+                "duration": 5
+            }
+        ],
+        "visual": {
+            "style": "stoic",
+            "tempo": "slow",
+            "colors": "neutral"
+        },
+        "voice": {
+            "type": "stoic_elder",
+            "tempo": "slow",
+            "emotion": "calm",
+            "pauses": "medium",
+            "intonation": "deep_resonance"
+        },
+        "meta": {
+            "export": "ready",
+            "version": "v3.23"
+        }
+    },
+    "analytics": {
+        "metrics": {
+            "text": {
+                "length": 1,
+                "has_voice": true,
+                "has_visual": true
+            },
+            "visual": {
+                "visual_blocks": 3,
+                "diversity": 3
+            },
+            "voice": {
+                "voice_blocks": 5,
+                "has_voice": true
+            },
+            "timeline": {
+                "timeline_length": 1
+            },
+            "quality": {
+                "complete": true
+            },
+            "performance": {
+                "export_ready": true
+            },
+            "user": {
+                "user_patterns": []
+            },
+            "factory": {
+                "version": "v3.23"
+            },
+            "compliance": {
+                "has_meta": true
+            },
+            "training": {
+                "training_ready": true
+            },
+            "publishing": {
+                "publish_ready": true
+            }
+        },
+        "report": "[text]\n  length: 1\n  has_voice: True\n  has_visual: True\n[visual]\n  visual_blocks: 3\n  diversity: 3\n[voice]\n  voice_blocks: 5\n  has_voice: True\n[timeline]\n  timeline_length: 1\n[quality]\n  complete: True\n[performance]\n  export_ready: True\n[user]\n  user_patterns: []\n[factory]\n  version: v3.23\n[compliance]\n  has_meta: True\n[training]\n  training_ready: True\n[publishing]\n  publish_ready: True"
+    }
+}
