@@ -1,23 +1,19 @@
 """
-ENGINE — центральный модуль генерации контента.
-Принимает сцену, вызывает parser, builder и timeline.
+ENGINE — модуль структурирования текста в таймлайн.
 """
 
-from .parser import parse_scene
-from .builder import build_structure
-from .timeline import create_timeline
+def build_timeline(text: str) -> list:
+    if not text:
+        return []
 
-def run_engine(scene_text: str) -> dict:
-    """
-    Основной процесс генерации.
-    Возвращает структуру ролика.
-    """
-    parsed = parse_scene(scene_text)
-    structure = build_structure(parsed)
-    timeline = create_timeline(structure)
+    sentences = [s.strip() for s in text.split('.') if s.strip()]
 
-    return {
-        "parsed": parsed,
-        "structure": structure,
-        "timeline": timeline
-    }
+    timeline = []
+    for i, sentence in enumerate(sentences, start=1):
+        timeline.append({
+            "id": i,
+            "text": sentence,
+            "duration": 5
+        })
+
+    return timeline
