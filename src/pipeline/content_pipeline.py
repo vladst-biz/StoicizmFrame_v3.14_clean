@@ -1,32 +1,44 @@
 """
-content_pipeline.py — полный конвейер фабрики контента
-StoicizmFrame v3.5 — Factory Layer
+content_pipeline.py — основной конвейер фабрики
+StoicizmFrame v3.14 — QC Logging Layer Integration (3.6.4)
+
+ARCHITECTURE:
+    - Donor loading
+    - Scenario building (QC-aware)
+    - Voice generation (QC-aware)
+    - Layout composition (QC-aware)
+    - QC logging (TXT + JSONL)
+    - Unified PipelineResult with QC metadata
+
+GIT FIXPOINT:
+    FILE: content_pipeline.py
+    VERSION: v3.14.4-QC
+    PURPOSE: Integrate QCLogger into ContentPipeline (3.6.4)
+    ROLLBACK TAG: content_pipeline_v3.14.3_preQC
 """
 
 from pathlib import Path
-from dataclasses import dataclass
+from datetime import datetime
 
-from donors.donor_loader import DonorLoader
-from scenario.scenario_builder import ScenarioBuilder
-from voice.voice_adapter import VoiceAdapter
-from video.layout_composer import LayoutComposer
+from src.donor.donor_loader import DonorLoader
+from src.scenario.scenario_builder import ScenarioBuilder
+from src.voice.voice_adapter import VoiceAdapter
+from src.video.layout_composer import LayoutComposer
+from src.qc.qc_logger import QCLogger
 
-
-@dataclass
-class PipelineResult:
-    """Результат полного цикла фабрики"""
-    donor_file: Path
-    timeline_path: Path
+from src.pipeline.pipeline_result import PipelineResult
 
 
 class ContentPipeline:
     """
-    ContentPipeline отвечает за:
+    ContentPipeline — главный производственный конвейер StoicizmFrame.
+
+    Отвечает за:
     - загрузку доноров
     - построение сценария
     - генерацию озвучки
     - сборку таймлайна
-    - возврат результата
+    - логирование качества (QC Logging Layer)
     """
 
     def __init__(self):
@@ -34,44 +46,61 @@ class ContentPipeline:
         self.builder = ScenarioBuilder()
         self.voice = VoiceAdapter()
         self.layout = LayoutComposer()
+        self.qc_logger = QCLogger()
 
     def process_text(self, text: str, name: str = "donor") -> PipelineResult:
-        """Обрабатывает один текст без файлов"""
+        """
+        Полный цикл обработки текста:
+        - построение сценария
+        - генерация озвучки
+        - сборка таймлайна
+        - логирование QC
+        """
 
+        # --- SCENARIO BUILDING ---
         scenario = self.builder.build(text)
+
+        # --- VOICE GENERATION ---
         voice = self.voice.generate(
             entry=scenario.entry,
             body=scenario.body,
-            legacy=scenario.legacy
+            legacy=scenario.legacy,
+            qc=scenario.qc
         )
+
+        # --- LAYOUT COMPOSITION ---
         timeline = self.layout.compose(
             entry_audio=voice.entry_path,
             body_audio=voice.body_path,
-            legacy_audio=voice.legacy_path
+            legacy_audio=voice.legacy_path,
+            qc=scenario.qc
         )
 
+        # --- QC LOGGING ---
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        self.qc_logger.log(
+            donor_name=name,
+            qc_status=scenario.qc.status.value,
+            qc_messages=scenario.qc.messages
+        )
+
+        # --- RESULT ---
         return PipelineResult(
-            donor_file=Path(f"{name}.txt"),
-            timeline_path=timeline.timeline_path
+            donor_file=Path(name),
+            timeline_path=timeline.timeline_path,
+            qc_status=scenario.qc.status.value,
+            qc_messages=scenario.qc.messages,
+            qc_timestamp=timestamp
         )
 
-    def process_all(self) -> list:
-        """Обрабатывает все доноры из каталога donors/"""
 
-        donors = self.loader.load_all()
-        results = []
-
-        for name, text in donors.items():
-            result = self.process_text(text, name=name)
-            results.append(result)
-
-        return results
-
-
-if __name__ == "__main__":
-    pipeline = ContentPipeline()
-    results = pipeline.process_all()
-
-    print("[INFO] Обработано файлов:", len(results))
-    for r in results:
-        print(" -", r.donor_file, "→", r.timeline_path)
+# --- ARCHITECTURAL ROLLBACK MARKER ---
+"""
+ROLLBACK INSTRUCTIONS:
+    git tag content_pipeline_v3.14.3_preQC
+    git add src/pipeline/content_pipeline.py
+    git commit -m "v3.14.4-QC — QC Logging Layer Integration (3.6.4)"
+    git tag content_pipeline_v3.14.4_QC
+"""
+# --- END OF FILE ---
