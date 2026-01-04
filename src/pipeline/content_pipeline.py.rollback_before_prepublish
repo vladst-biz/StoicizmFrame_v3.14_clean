@@ -1,4 +1,3 @@
-from qc import PrePublishGate, QCStatus
 from qc import SemanticQC, QCMode
 """
 content_pipeline.py — основной конвейер фабрики
@@ -149,18 +148,3 @@ def run_structural_qc(scene_root, qc_logger, pipeline_result):
 
     return struct_result
 
-
-
-# === PrePublish Gate ===
-def run_prepublish_gate(scene_root, qc_logger, pipeline_result):
-    gate = PrePublishGate()
-    result = gate.run(scene_root)
-
-    for msg in result.messages:
-        qc_logger.info(f"[PREPUBLISH] {msg}")
-
-    if result.status == QCStatus.ERROR:
-        qc_logger.error("PrePublish Gate: критические ошибки. Сцена помечена как PENDING.")
-        pipeline_result.status = "PENDING"
-
-    return result
