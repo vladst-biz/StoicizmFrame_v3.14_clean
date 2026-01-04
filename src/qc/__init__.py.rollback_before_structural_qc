@@ -1,12 +1,9 @@
 from .semantic_qc import QCStatus, SemanticQCResult, SemanticQC
 from .qc_mode import QCMode
-from .structural_qc import StructuralQCResult, StructuralQC
 
 __all__ = [
     "QCStatus",
     "SemanticQCResult",
     "SemanticQC",
     "QCMode",
-    "StructuralQCResult",
-    "StructuralQC",
 ]
