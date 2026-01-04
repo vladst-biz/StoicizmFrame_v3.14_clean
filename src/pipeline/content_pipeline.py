@@ -1,3 +1,4 @@
+from qc import SemanticQC, QCMode
 """
 content_pipeline.py — основной конвейер фабрики
 StoicizmFrame v3.14 — QC Logging Layer Integration (3.6.4)
