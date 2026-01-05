@@ -1,3 +1,4 @@
+
 from qc import PrePublishGate, QCStatus
 from qc import SemanticQC, QCMode
 """
@@ -21,27 +22,20 @@ GIT FIXPOINT:
 
 from pathlib import Path
 from datetime import datetime
+from time import perf_counter
 
 from src.donor.donor_loader import DonorLoader
 from src.scenario.scenario_builder import ScenarioBuilder
 from src.voice.voice_adapter import VoiceAdapter
 from src.video.layout_composer import LayoutComposer
 from src.qc.qc_logger import QCLogger
+from src.pipeline.pipeline_logging import PipelineLogger
 
 from src.pipeline.pipeline_result import PipelineResult
 
 
 class ContentPipeline:
-    """
-    ContentPipeline — главный производственный конвейер StoicizmFrame.
-
-    Отвечает за:
-    - загрузку доноров
-    - построение сценария
-    - генерацию озвучки
-    - сборку таймлайна
-    - логирование качества (QC Logging Layer)
-    """
+    """Главный производственный конвейер StoicizmFrame."""
 
     def __init__(self):
         self.loader = DonorLoader()
@@ -49,55 +43,86 @@ class ContentPipeline:
         self.voice = VoiceAdapter()
         self.layout = LayoutComposer()
         self.qc_logger = QCLogger()
+        self.pipeline_logger = PipelineLogger()
+
 
     def process_text(self, text: str, name: str = "donor") -> PipelineResult:
-        """
-        Полный цикл обработки текста:
-        - построение сценария
-        - генерация озвучки
-        - сборка таймлайна
-        - логирование QC
-        """
+        # === Pending-механизм: остановка пайплайна ===
+        if hasattr(self, "pipeline_result") and self.pipeline_result.is_pending():
+            self.qc_logger.error("[PIPELINE] Сцена находится в статусе PENDING. Пайплайн остановлен.")
+            self.pipeline_logger.log_error("Scene is already PENDING. Pipeline stopped.")
+            return self.pipeline_result
 
-        # --- SCENARIO BUILDING ---
-        scenario = self.builder.build(text)
+        try:
+            # --- SCENARIO BUILDING ---
+            t0 = perf_counter()
+            scenario = self.builder.build(text)
+            self.pipeline_logger.log_performance("SCENARIO_BUILD", perf_counter() - t0)
 
-        # --- VOICE GENERATION ---
-        voice = self.voice.generate(
-            entry=scenario.entry,
-            body=scenario.body,
-            legacy=scenario.legacy,
-            qc=scenario.qc
-        )
+            # --- VOICE GENERATION ---
+            t0 = perf_counter()
+            voice = self.voice.generate(
+                entry=scenario.entry,
+                body=scenario.body,
+                legacy=scenario.legacy,
+                qc=scenario.qc
+            )
+            self.pipeline_logger.log_performance("VOICE_GENERATION", perf_counter() - t0)
 
-        # --- LAYOUT COMPOSITION ---
-        timeline = self.layout.compose(
-            entry_audio=voice.entry_path,
-            body_audio=voice.body_path,
-            legacy_audio=voice.legacy_path,
-            qc=scenario.qc
-        )
+            # --- LAYOUT COMPOSITION ---
+            t0 = perf_counter()
+            timeline = self.layout.compose(
+                entry_audio=voice.entry_path,
+                body_audio=voice.body_path,
+                legacy_audio=voice.legacy_path,
+                qc=scenario.qc
+            )
+            self.pipeline_logger.log_performance("LAYOUT_COMPOSITION", perf_counter() - t0)
 
-        # --- QC LOGGING ---
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # --- QC LOGGING ---
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        self.qc_logger.log(
-            donor_name=name,
-            qc_status=scenario.qc.status.value,
-            qc_messages=scenario.qc.messages
-        )
+            self.qc_logger.log(
+                donor_name=name,
+                qc_status=scenario.qc.status.value,
+                qc_messages=scenario.qc.messages
+            )
 
-        # --- RESULT ---
-        return PipelineResult(
-            donor_file=Path(name),
-            timeline_path=timeline.timeline_path,
-            qc_status=scenario.qc.status.value,
-            qc_messages=scenario.qc.messages,
-            qc_timestamp=timestamp
-        )
+            # --- RESULT OBJECT ---
+            self.pipeline_result = PipelineResult(
+                donor_file=Path(name),
+                timeline_path=timeline.timeline_path,
+                qc_status=scenario.qc.status.value,
+                qc_messages=scenario.qc.messages,
+                qc_timestamp=timestamp
+            )
+
+            # === PrePublish Gate ===
+            gate = PrePublishGate()
+            qc_final = gate.run(scenario)
+
+            for msg in qc_final.messages:
+                self.qc_logger.info(f"[PREPUBLISH] {msg}")
+
+            # === Pending-стоп после PrePublish Gate ===
+            if qc_final.status == QCStatus.ERROR:
+                self.qc_logger.error("[PIPELINE] PrePublish Gate: критические ошибки. Сцена помечена как PENDING.")
+                self.pipeline_result.mark_pending("Critical QC errors detected")
+                self.pipeline_logger.log_error("PrePublish Gate: critical QC errors, scene marked as PENDING.")
+                self.pipeline_logger.create_run_report(self.pipeline_result)
+                return self.pipeline_result
+
+            # --- Финальный отчет ---
+            self.pipeline_logger.create_run_report(self.pipeline_result)
+            return self.pipeline_result
+
+        except Exception as e:
+            msg = f"Pipeline failed: {e}"
+            self.qc_logger.error(msg)
+            self.pipeline_logger.log_error(msg)
+            raise
 
 
-# --- ARCHITECTURAL ROLLBACK MARKER ---
 """
 ROLLBACK INSTRUCTIONS:
     git tag content_pipeline_v3.14.3_preQC
@@ -105,62 +130,4 @@ ROLLBACK INSTRUCTIONS:
     git commit -m "v3.14.4-QC — QC Logging Layer Integration (3.6.4)"
     git tag content_pipeline_v3.14.4_QC
 """
-# --- END OF FILE ---
 
-# ============================================
-# Structural QC Integration (этап 3)
-# Шаблон функции для интеграции StructuralQC
-# Вызовите её из основного пайплайна после SemanticQC,
-# перед голосом/рендером.
-# ============================================
-
-def run_structural_qc(scene_root, qc_logger, pipeline_result):
-    """
-    Запускает Structural QC для указанной сцены.
-
-    Ожидается, что:
-    - scene_root указывает на корень сцены (директорию с audio/ и timeline/);
-    - qc_logger поддерживает методы info/warning/error;
-    - pipeline_result имеет поля status и структурное поле structural_qc (опционально).
-
-    Функция не останавливает процесс целиком:
-    - при ERROR сцена должна уйти в pending;
-    - при WARNING фабрика продолжает работать, но логирует проблему.
-    """
-    struct_qc = StructuralQC()
-    struct_result = struct_qc.check_scene_structure(scene_root)
-
-    # Сохраняем результат в pipeline_result, если структура это позволяет
-    if hasattr(pipeline_result, "structural_qc"):
-        pipeline_result.structural_qc = struct_result
-
-    # Логирование сообщений QC
-    for msg in struct_result.messages:
-        qc_logger.info(f"[STRUCTURAL QC] {msg}")
-
-    # Обработка статуса
-    if struct_result.status == QCStatus.ERROR:
-        qc_logger.error("Structural QC: критические ошибки структуры сцены. Сцена должна быть помечена как pending.")
-        if hasattr(pipeline_result, "status"):
-            pipeline_result.status = "PENDING"
-
-    elif struct_result.status == QCStatus.WARNING:
-        qc_logger.warning("Structural QC: есть предупреждения, фабрика продолжает работу.")
-
-    return struct_result
-
-
-
-# === PrePublish Gate ===
-def run_prepublish_gate(scene_root, qc_logger, pipeline_result):
-    gate = PrePublishGate()
-    result = gate.run(scene_root)
-
-    for msg in result.messages:
-        qc_logger.info(f"[PREPUBLISH] {msg}")
-
-    if result.status == QCStatus.ERROR:
-        qc_logger.error("PrePublish Gate: критические ошибки. Сцена помечена как PENDING.")
-        pipeline_result.status = "PENDING"
-
-    return result
