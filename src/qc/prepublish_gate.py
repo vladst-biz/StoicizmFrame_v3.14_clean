@@ -1,75 +1,102 @@
-from __future__ import annotations
+# ============================================================
+#  StoicizmFrame — PrePublish Gate v3.14.8
+#  Финальный QC-барьер перед публикацией / рендером.
+# ============================================================
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict
+import json
+from src.qc.semantic_qc import QCStatus
 
-from .semantic_qc import QCStatus
 
+class PrePublishGateResult:
+    """Результат финальной QC-проверки перед публикацией."""
 
-@dataclass
-class PrePublishResult:
-    status: QCStatus
-    messages: List[str]
-    stats: Dict[str, int]
+    def __init__(self, status: QCStatus, messages: list[str]):
+        self.status = status
+        self.messages = messages
+
+    def to_json(self):
+        return {
+            "status": self.status.value,
+            "messages": self.messages
+        }
 
 
 class PrePublishGate:
-    """
-    PrePublish Gate (3.6.3)
-    Финальная проверка перед рендером.
-    """
+    """Финальная QC-проверка перед публикацией / рендером."""
 
-    def __init__(self, min_audio_duration: float = 1.0):
-        self.min_audio_duration = min_audio_duration
+    def __init__(self):
+        pass
 
-    def _get_audio_duration(self, path: Path) -> float:
-        if not path.is_file():
-            return 0.0
-        size = path.stat().st_size
-        return size / 50000.0
-
-    def run(self, scene_root: str | Path) -> PrePublishResult:
-        root = Path(scene_root)
-        messages: List[str] = []
+    def run(self, version_dir: Path, scenario, final_qc):
+        messages = []
         status = QCStatus.OK
 
-        entry = root / "audio" / "entry.txt"
-        body = root / "audio" / "body.txt"
-        legacy = root / "audio" / "legacy.txt"
-        timeline = root / "timeline" / "timeline.txt"
+        # 1. Проверка структуры C
+        required_files = [
+            version_dir / "scenario" / "scenario.json",
+            version_dir / "qc" / "qc.json",
+        ]
 
-        required = [entry, body, legacy, timeline]
-        missing = [str(p) for p in required if not p.is_file()]
+        for f in required_files:
+            if not f.exists():
+                messages.append(f"Отсутствует обязательный файл: {f}")
+                status = QCStatus.ERROR
 
-        if missing:
-            messages.append("PrePublish: отсутствуют обязательные файлы.")
+        # 2. Проверка пустоты сегментов
+        if not scenario.entry.strip():
+            messages.append("ENTRY пустой.")
             status = QCStatus.ERROR
 
-        duration = self._get_audio_duration(body)
-        if duration < self.min_audio_duration:
-            messages.append(f"PrePublish: длительность BODY слишком мала ({duration:.2f} сек).")
+        if not scenario.body.strip():
+            messages.append("BODY пустой.")
             status = QCStatus.ERROR
 
-        if legacy.is_file():
-            text = legacy.read_text(encoding="utf-8").strip()
-            if len(text) < 20:
-                messages.append("PrePublish: LEGACY слишком короткий.")
-                status = QCStatus.WARNING
-        else:
-            messages.append("PrePublish: LEGACY отсутствует.")
+        if not scenario.legacy.strip():
+            messages.append("LEGACY пустой.")
+            status = QCStatus.WARNING
+
+        # 3. Проверка Final QC
+        if final_qc.status == QCStatus.ERROR:
+            messages.append("Final QC: критические ошибки.")
             status = QCStatus.ERROR
 
-        stats = {
-            "missing_files": len(missing),
-            "audio_duration": duration,
-        }
+        if final_qc.status == QCStatus.WARNING and status != QCStatus.ERROR:
+            messages.append("Final QC: есть предупреждения.")
+            status = QCStatus.WARNING
 
-        if not messages:
-            messages.append("PrePublish Gate: сцена готова к рендеру.")
+        # 4. Создаём prepublish.json
+        prepublish_path = version_dir / "qc" / "prepublish.json"
+        prepublish_path.parent.mkdir(parents=True, exist_ok=True)
 
-        return PrePublishResult(
-            status=status,
-            messages=messages,
-            stats=stats,
-        )
+        with prepublish_path.open("w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "status": status.value,
+                    "messages": messages,
+                },
+                f,
+                ensure_ascii=False,
+                indent=4,
+            )
+
+        return PrePublishGateResult(status, messages)
+
+
+def apply_prepublish_gate(version_dir, scenario, final_qc, pipeline_result, logger):
+    gate = PrePublishGate()
+    result = gate.run(version_dir, scenario, final_qc)
+
+    # Логируем
+    for msg in result.messages:
+        logger.log_error(f"[PREPUBLISH] {msg}")
+
+    # Pending-механизм
+    if result.status == QCStatus.ERROR:
+        pipeline_result.mark_pending("PrePublish Gate: критические ошибки")
+
+    # Записываем QC-статус в PipelineResult
+    pipeline_result.qc_status = result.status.value
+    pipeline_result.qc_messages.extend(result.messages)
+
+    return result

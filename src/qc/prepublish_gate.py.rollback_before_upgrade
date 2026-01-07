@@ -1,0 +1,38 @@
+
+from src.qc.semantic_qc import QCStatus
+
+
+class PrePublishGate:
+    """
+    Финальная QC-проверка перед публикацией.
+    Если есть критические ошибки — сцена уходит в PENDING.
+    """
+
+    def run(self, scene_root):
+        """
+        Выполняет финальную проверку сцены.
+        Возвращает QCResult.
+        """
+        result = scene_root.qc_run_final()
+        return result
+
+
+def apply_prepublish_gate(scene_root, qc_logger, pipeline_result):
+    """
+    Запускает PrePublish Gate и применяет Pending-механизм.
+    """
+    gate = PrePublishGate()
+    qc_result = gate.run(scene_root)
+
+    # Логируем все сообщения
+    for msg in qc_result.messages:
+        qc_logger.info(f"[PREPUBLISH] {msg}")
+
+    # Если критические ошибки — ставим сцену в PENDING
+    if qc_result.status == QCStatus.ERROR:
+        qc_logger.error("PrePublish Gate: критические ошибки. Сцена помечена как PENDING.")
+        pipeline_result.mark_pending("Critical QC errors detected")
+
+    return qc_result
+
+
