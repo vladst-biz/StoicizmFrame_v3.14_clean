@@ -1,0 +1,174 @@
+# ============================================================
+#  ARCHITECTURAL PATCH: SCENARIO_BUILDER_REWRITE_v3.14.6
+#  TARGET FILE:
+#     D:\StoicizmFrame_v3.14_clean\src\scenario\scenario_builder.py
+#
+#  PURPOSE:
+#     Полная финальная версия Scenario + FinalQCResult + qc_run_final()
+#     Полная совместимость с PrePublishGate и ContentPipeline.
+# ============================================================
+
+from pathlib import Path
+import json
+
+from src.qc.semantic_qc import SemanticQC, QCStatus
+
+
+class FinalQCResult:
+    """
+    Финальный QC-результат, который возвращает PrePublishGate.
+    Содержит:
+    - итоговый статус
+    - список сообщений
+    """
+
+    def __init__(self, status: QCStatus, messages):
+        self.status = status
+        self.messages = messages
+
+    def to_json(self) -> str:
+        """
+        Возвращает JSON-представление финального QC.
+        """
+        import json
+        return json.dumps(
+            {
+                "status": self.status.value,
+                "messages": self.messages,
+            },
+            ensure_ascii=False,
+            indent=4,
+        )
+
+
+class Scenario:
+    """
+    Каноническая структура сценария StoicizmFrame.
+    Совместима с content_pipeline.py.
+    """
+
+    def __init__(self, scene_id: str, entry: str, body: str, legacy: str, qc_result):
+        self.scene_id = scene_id
+        self.entry = entry
+        self.body = body
+        self.legacy = legacy
+        self.qc = qc_result
+
+    def to_json(self) -> str:
+        """
+        Сериализация сценария в JSON.
+        """
+        return json.dumps(
+            {
+                "scene_id": self.scene_id,
+                "entry": self.entry,
+                "body": self.body,
+                "legacy": self.legacy,
+                "qc": self.qc.to_dict(),
+            },
+            ensure_ascii=False,
+            indent=4,
+        )
+
+    # ============================================================
+    #  FINAL QC LAYER
+    # ============================================================
+    def qc_run_final(self) -> FinalQCResult:
+        """
+        Финальная QC-проверка перед PrePublishGate.
+        Проверяет:
+        - пустоту ENTRY/BODY/LEGACY
+        - статус SemanticQC
+        """
+
+        messages = []
+
+        # Если SemanticQC отсутствует — критическая ошибка
+        if self.qc is None:
+            messages.append("FinalQC: отсутствует SemanticQCResult.")
+            return FinalQCResult(QCStatus.ERROR, messages)
+
+        # Наследуем сообщения SemanticQC
+        messages.extend(self.qc.messages)
+        status = self.qc.status
+
+        # ENTRY
+        if not self.entry.strip():
+            messages.append("FinalQC: ENTRY пустой после всех стадий.")
+            status = QCStatus.ERROR
+
+        # BODY
+        if not self.body.strip():
+            messages.append("FinalQC: BODY пустой после всех стадий.")
+            status = QCStatus.ERROR
+
+        # LEGACY
+        if not self.legacy.strip():
+            messages.append("FinalQC: LEGACY пустой после всех стадий.")
+            if status != QCStatus.ERROR:
+                status = QCStatus.WARNING
+
+        return FinalQCResult(status, messages)
+
+
+class ScenarioBuilder:
+    """
+    ScenarioBuilder — модуль фабрики StoicizmFrame, отвечающий за:
+    - построение сценария из входного текста
+    - разбиение на ENTRY/BODY/LEGACY
+    - семантический QC
+    - подготовку структуры для пайплайна
+    """
+
+    def __init__(self, scene_id: str, version_dir: Path):
+        self.scene_id = scene_id
+        self.version_dir = Path(version_dir)
+
+        self.scenario_dir = self.version_dir / "scenario"
+        self.scenario_dir.mkdir(parents=True, exist_ok=True)
+
+        self.qc = SemanticQC()
+
+    def build(self, text: str) -> Scenario:
+        """
+        Превращает сырой текст в структурированный сценарий:
+        ENTRY / BODY / LEGACY + QC.
+        """
+
+        entry, body, legacy = self._split_entry_body_legacy(text)
+
+        qc_result = self.qc.check_entry_body_legacy(entry, body, legacy)
+
+        scenario = Scenario(
+            scene_id=self.scene_id,
+            entry=qc_result.fixed_entry,
+            body=qc_result.fixed_body,
+            legacy=qc_result.fixed_legacy,
+            qc_result=qc_result,
+        )
+
+        self._save_scenario(scenario)
+        return scenario
+
+    def _split_entry_body_legacy(self, text: str):
+        """
+        Простая версия:
+        - ENTRY = первое предложение
+        - BODY = всё между ENTRY и последним предложением
+        - LEGACY = последнее предложение
+        """
+
+        parts = [p.strip() for p in text.split(".") if p.strip()]
+
+        if len(parts) == 1:
+            return parts[0], parts[0], parts[0]
+
+        entry = parts[0]
+        legacy = parts[-1]
+        body = ". ".join(parts[1:-1]) if len(parts) > 2 else parts[0]
+
+        return entry, body, legacy
+
+    def _save_scenario(self, scenario: Scenario):
+        scenario_path = self.scenario_dir / "scenario.json"
+        scenario_path.write_text(scenario.to_json(), encoding="utf-8")
