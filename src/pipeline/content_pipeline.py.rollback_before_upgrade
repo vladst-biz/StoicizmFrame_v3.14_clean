@@ -1,0 +1,114 @@
+from pathlib import Path
+from datetime import datetime
+from time import perf_counter
+
+from src.pipeline.scene_versioning import SceneVersionManager
+from src.pipeline.pipeline_logging import PipelineLogger
+from src.pipeline.pipeline_result import PipelineResult
+
+from src.donor.donor_loader import DonorLoader
+from src.scenario.scenario_builder import ScenarioBuilder
+from src.voice.voice_adapter import VoiceAdapter
+from src.video.layout_composer import LayoutComposer
+from src.qc.qc_logger import QCLogger
+from src.qc.prepublish_gate import PrePublishGate
+from src.qc.semantic_qc import QCStatus
+
+
+class ContentPipeline:
+    """Главный производственный конвейер StoicizmFrame с версионированием сцен."""
+
+    def __init__(self):
+        self.loader = DonorLoader()
+        self.voice = VoiceAdapter()
+        self.layout = LayoutComposer()
+        self.qc_logger = QCLogger()
+        self.pipeline_logger = PipelineLogger()
+        self.versioning = SceneVersionManager()
+
+    def process_text(self, text: str, name: str = "donor") -> PipelineResult:
+        # === Создание версии сцены ===
+        scene_id, version, version_dir = self.versioning.create_scene_version()
+
+        # Создаём структуру C
+        scenario_dir = version_dir / "scenario"
+        qc_dir = version_dir / "qc"
+        audio_dir = version_dir / "audio"
+        video_dir = version_dir / "video"
+        reports_dir = version_dir / "reports"
+
+        for d in [scenario_dir, qc_dir, audio_dir, video_dir, reports_dir]:
+            d.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # === SCENARIO BUILD ===
+            t0 = perf_counter()
+            builder = ScenarioBuilder(scene_id, version_dir)
+            scenario = builder.build(text)
+            self.pipeline_logger.log_performance("SCENARIO_BUILD", perf_counter() - t0)
+
+            # Сохраняем сценарий
+            (scenario_dir / "scenario.json").write_text(scenario.to_json(), encoding="utf-8")
+
+            # === VOICE GENERATION ===
+            t0 = perf_counter()
+            voice = self.voice.generate(
+                entry=scenario.entry,
+                body=scenario.body,
+                legacy=scenario.legacy,
+                qc=scenario.qc
+            )
+            self.pipeline_logger.log_performance("VOICE_GENERATION", perf_counter() - t0)
+
+            voice.save_to(audio_dir)
+
+            # === LAYOUT COMPOSITION ===
+            t0 = perf_counter()
+            timeline = self.layout.compose(
+                entry_audio=voice.entry_path,
+                body_audio=voice.body_path,
+                legacy_audio=voice.legacy_path,
+                qc=scenario.qc
+            )
+            self.pipeline_logger.log_performance("LAYOUT_COMPOSITION", perf_counter() - t0)
+
+            timeline.save_to(video_dir)
+
+            # === QC LOGGING ===
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            self.qc_logger.log(
+                donor_name=name,
+                qc_status=scenario.qc.status.value,
+                qc_messages=scenario.qc.messages
+            )
+
+            (qc_dir / "qc.json").write_text(scenario.qc.to_json(), encoding="utf-8")
+
+            # === PrePublish Gate ===
+            gate = PrePublishGate()
+            qc_final = gate.run(scenario)
+
+            (qc_dir / "prepublish.json").write_text(qc_final.to_json(), encoding="utf-8")
+
+            if qc_final.status == QCStatus.ERROR:
+                self.pipeline_logger.log_error("PrePublish Gate: critical QC errors")
+                result = PipelineResult(scene_id, version, version_dir, "PENDING")
+                self.pipeline_logger.create_run_report(result)
+                (reports_dir / "run.md").write_text(result.to_markdown(), encoding="utf-8")
+                return result
+
+            # === Финальный результат ===
+            result = PipelineResult(scene_id, version, version_dir, "OK")
+            self.pipeline_logger.create_run_report(result)
+            (reports_dir / "run.md").write_text(result.to_markdown(), encoding="utf-8")
+            return result
+
+        except Exception as e:
+            self.pipeline_logger.log_error(str(e))
+            raise
+
+
+"""
+ROLLBACK: content_pipeline.py.rollback_before_scene_versioning
+"""
