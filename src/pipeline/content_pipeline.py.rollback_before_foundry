@@ -1,6 +1,6 @@
 # ============================================================
 #  StoicizmFrame — Content Pipeline v3.15
-#  Интеграция Azure OpenAI + Azure Speech + Foundry
+#  Интеграция Azure OpenAI + новая архитектура ScenarioBuilder
 # ============================================================
 
 from pathlib import Path
@@ -8,10 +8,6 @@ from datetime import datetime
 
 from src.ai.azure_openai_client import AzureOpenAIClient
 from src.scenario.scenario_builder import ScenarioBuilder
-from src.voice.voice_adapter import VoiceAdapter
-from src.video.layout_composer import LayoutComposer
-from src.video.foundry_adapter import FoundryAdapter
-
 from src.qc.semantic_qc import SemanticQC
 from src.qc.structural_qc import StructuralQC
 from src.pipeline.pipeline_result import PipelineResult
@@ -33,30 +29,17 @@ class ContentPipeline:
             deployment="YOUR_AZURE_OPENAI_DEPLOYMENT"
         )
 
-        # === Azure Speech ===
-        self.voice = VoiceAdapter()
-
-        # === Layout Composer ===
-        self.layout = LayoutComposer()
-
-        # === Foundry ===
-        self.foundry = FoundryAdapter(
-            endpoint="YOUR_FOUNDRY_ENDPOINT",
-            api_key="YOUR_FOUNDRY_KEY"
-        )
-
-        # Новый ScenarioBuilder
+        # Новый ScenarioBuilder с Azure OpenAI
         self.builder = ScenarioBuilder(self.client)
 
     def process_text(self, text: str, donor_file: str | None = None):
         """
         Полный цикл:
         1. ScenarioBuilder (Azure OpenAI)
-        2. Azure Speech
-        3. Layout Composer
-        4. Foundry Render
-        5. QC
-        6. Reporting Layer
+        2. Semantic QC
+        3. Structural QC
+        4. Final QC
+        5. Reporting Layer
         """
 
         scene_id = "SCENE_001"
@@ -64,38 +47,23 @@ class ContentPipeline:
         version_dir = Path(f"output/{scene_id}/{version}")
         version_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Генерация сценария
+        # 1. Генерация сценария через Azure OpenAI
         scenario = self.builder.build(text)
 
-        # 2. Генерация голоса
-        voice = self.voice.generate(
-            entry=scenario.entry,
-            body=scenario.body,
-            legacy=scenario.legacy
+        # 2. Semantic QC
+        semantic_result = self.semantic_qc.check_entry_body_legacy(
+            scenario.entry,
+            scenario.body,
+            scenario.legacy,
         )
 
-        # 3. Генерация таймлайна
-        timeline = self.layout.compose(
-            entry_audio=voice.entry_path,
-            body_audio=voice.body_path,
-            legacy_audio=voice.legacy_path
-        )
+        # 3. Structural QC
+        structural_result = self.structural_qc.check_structure(version_dir)
 
-        # 4. Рендер видео через Foundry
-        video_path = self.foundry.render(
-            storyboard=self.foundry.build_storyboard(
-                timeline,
-                voice.entry_path,
-                voice.body_path,
-                voice.legacy_path
-            ),
-            output_dir=version_dir
-        )
-
-        # 5. Финальный QC
+        # 4. Final QC
         final_qc = scenario.qc_run_final()
 
-        # 6. Формируем PipelineResult
+        # 5. Формируем PipelineResult
         result = PipelineResult(
             scene_id=scene_id,
             version=version,
@@ -104,10 +72,9 @@ class ContentPipeline:
             donor_file=donor_file,
             qc_status=final_qc.status.value,
             qc_messages=final_qc.messages,
-            video_path=video_path
         )
 
-        # 7. Reporting Layer
+        # 6. Reporting Layer
         self.pipeline_logger.create_run_report(result)
 
         print("\n=== PIPELINE RESULT ===\n")
