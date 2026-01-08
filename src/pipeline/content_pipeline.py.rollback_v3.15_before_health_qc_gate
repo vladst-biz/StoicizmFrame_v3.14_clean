@@ -4,6 +4,7 @@
 # ============================================================
 
 from pathlib import Path
+from datetime import datetime
 
 from src.ai.azure_openai_client import AzureOpenAIClient
 from src.scenario.scenario_builder import ScenarioBuilder
@@ -13,9 +14,6 @@ from src.video.foundry_adapter import FoundryAdapter
 
 from src.qc.semantic_qc import SemanticQC
 from src.qc.structural_qc import StructuralQC
-from src.qc.health_layer import HealthLayer
-from src.qc.prepublish_gate import PrePublishGate
-
 from src.pipeline.pipeline_result import PipelineResult
 from src.pipeline.pipeline_logging import PipelineLogger
 
@@ -27,10 +25,6 @@ class ContentPipeline:
         self.pipeline_logger = PipelineLogger()
         self.semantic_qc = SemanticQC()
         self.structural_qc = StructuralQC()
-
-        # Health + Gate
-        self.health_layer = HealthLayer()
-        self.prepublish_gate = PrePublishGate()
 
         # === Azure OpenAI Client ===
         self.client = AzureOpenAIClient(
@@ -61,10 +55,8 @@ class ContentPipeline:
         2. Azure Speech
         3. Layout Composer
         4. Foundry Render
-        5. Health Layer
-        6. QC Layer
-        7. PrePublish Gate
-        8. Reporting Layer
+        5. QC
+        6. Reporting Layer
         """
 
         scene_id = "SCENE_001"
@@ -100,26 +92,10 @@ class ContentPipeline:
             output_dir=version_dir
         )
 
-        # 5. Health Layer
-        health = self.health_layer.run(
-            scenario=scenario,
-            voice=voice,
-            timeline=timeline,
-            video_path=video_path
-        )
-
-        # 6. QC Layer
-        qc_sem = self.semantic_qc.run(scenario)
-        qc_struct = self.structural_qc.run(scenario)
-        qc = qc_sem.merge(qc_struct)
-
-        # 7. PrePublish Gate
-        gate = self.prepublish_gate.evaluate(health, qc)
-
-        # 8. Финальный QC
+        # 5. Финальный QC
         final_qc = scenario.qc_run_final()
 
-        # 9. Формируем PipelineResult
+        # 6. Формируем PipelineResult
         result = PipelineResult(
             scene_id=scene_id,
             version=version,
@@ -128,16 +104,14 @@ class ContentPipeline:
             donor_file=donor_file,
             qc_status=final_qc.status.value,
             qc_messages=final_qc.messages,
-            video_path=video_path,
-            gate_status=gate.status,
-            gate_reason=gate.reason,
+            video_path=video_path
         )
 
-        # 10. Reporting Layer
+        # 7. Reporting Layer
         self.pipeline_logger.create_run_report(result)
 
-        print("\\n=== PIPELINE RESULT ===\\n")
+        print("\n=== PIPELINE RESULT ===\n")
         print(result.to_markdown())
-        print("\\n========================\\n")
+        print("\n========================\n")
 
         return result
