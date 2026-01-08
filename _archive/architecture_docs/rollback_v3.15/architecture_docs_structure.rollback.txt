@@ -1,0 +1,17 @@
+StoicizmFrame Architecture Docs Rollback v3.15
+Generated: 2026-01-08 12:22:53
+
+This rollback confirms that the following directory structure
+was created automatically:
+
+- docs/
+  └── architecture/
+      ARCHITECTURE_STATUS_v3.15.md
+      ROADMAP_v4.0.md
+      BRANCH_TREE.md
+      DEPLOYMENT_MAP.md
+      FOUNDATION_MODELS.md
+
+- _archive/
+  └── architecture_docs/
+      └── rollback_v3.15/
