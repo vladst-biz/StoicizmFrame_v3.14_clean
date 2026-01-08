@@ -1,102 +1,53 @@
 # ============================================================
-#  StoicizmFrame — PrePublish Gate v3.14.8
-#  Финальный QC-барьер перед публикацией / рендером.
+#  StoicizmFrame — PrePublish Gate v3.15
+#  Финальное решение о публикации на основе Health + QC
 # ============================================================
 
-from pathlib import Path
-import json
-from src.qc.semantic_qc import QCStatus
+from dataclasses import dataclass
 
 
-class PrePublishGateResult:
-    """Результат финальной QC-проверки перед публикацией."""
-
-    def __init__(self, status: QCStatus, messages: list[str]):
-        self.status = status
-        self.messages = messages
-
-    def to_json(self):
-        return {
-            "status": self.status.value,
-            "messages": self.messages
-        }
+@dataclass
+class GateDecision:
+    status: str   # "BLOCK" | "REQUIRE_CONFIRMATION" | "AUTO_PUBLISH"
+    reason: str   # текстовое пояснение
 
 
 class PrePublishGate:
-    """Финальная QC-проверка перед публикацией / рендером."""
+    """
+    Принимает решения о публикации на основе:
+    - Health Layer (health.status: OK/WARNING/FAIL)
+    - QC Layer (qc.status: PASS/WARNING/FAIL или аналогично)
+    """
 
-    def __init__(self):
-        pass
-
-    def run(self, version_dir: Path, scenario, final_qc):
-        messages = []
-        status = QCStatus.OK
-
-        # 1. Проверка структуры C
-        required_files = [
-            version_dir / "scenario" / "scenario.json",
-            version_dir / "qc" / "qc.json",
-        ]
-
-        for f in required_files:
-            if not f.exists():
-                messages.append(f"Отсутствует обязательный файл: {f}")
-                status = QCStatus.ERROR
-
-        # 2. Проверка пустоты сегментов
-        if not scenario.entry.strip():
-            messages.append("ENTRY пустой.")
-            status = QCStatus.ERROR
-
-        if not scenario.body.strip():
-            messages.append("BODY пустой.")
-            status = QCStatus.ERROR
-
-        if not scenario.legacy.strip():
-            messages.append("LEGACY пустой.")
-            status = QCStatus.WARNING
-
-        # 3. Проверка Final QC
-        if final_qc.status == QCStatus.ERROR:
-            messages.append("Final QC: критические ошибки.")
-            status = QCStatus.ERROR
-
-        if final_qc.status == QCStatus.WARNING and status != QCStatus.ERROR:
-            messages.append("Final QC: есть предупреждения.")
-            status = QCStatus.WARNING
-
-        # 4. Создаём prepublish.json
-        prepublish_path = version_dir / "qc" / "prepublish.json"
-        prepublish_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with prepublish_path.open("w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "status": status.value,
-                    "messages": messages,
-                },
-                f,
-                ensure_ascii=False,
-                indent=4,
+    def evaluate(self, health, qc) -> GateDecision:
+        # 1. Критические ошибки — блокируем
+        if getattr(health, "status", "").upper() == "FAIL":
+            return GateDecision(
+                status="BLOCK",
+                reason="Health Layer: FAIL"
             )
 
-        return PrePublishGateResult(status, messages)
+        if getattr(qc, "status", "").upper() == "FAIL":
+            return GateDecision(
+                status="BLOCK",
+                reason="QC: FAIL"
+            )
 
+        # 2. Предупреждения — требуем ручного подтверждения
+        if getattr(health, "status", "").upper() == "WARNING":
+            return GateDecision(
+                status="REQUIRE_CONFIRMATION",
+                reason="Health Layer: WARNING"
+            )
 
-def apply_prepublish_gate(version_dir, scenario, final_qc, pipeline_result, logger):
-    gate = PrePublishGate()
-    result = gate.run(version_dir, scenario, final_qc)
+        if getattr(qc, "status", "").upper() == "WARNING":
+            return GateDecision(
+                status="REQUIRE_CONFIRMATION",
+                reason="QC: WARNING"
+            )
 
-    # Логируем
-    for msg in result.messages:
-        logger.log_error(f"[PREPUBLISH] {msg}")
-
-    # Pending-механизм
-    if result.status == QCStatus.ERROR:
-        pipeline_result.mark_pending("PrePublish Gate: критические ошибки")
-
-    # Записываем QC-статус в PipelineResult
-    pipeline_result.qc_status = result.status.value
-    pipeline_result.qc_messages.extend(result.messages)
-
-    return result
+        # 3. Всё чисто — можно автопубликовать
+        return GateDecision(
+            status="AUTO_PUBLISH",
+            reason="All checks passed"
+        )
