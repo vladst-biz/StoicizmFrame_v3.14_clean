@@ -1,11 +1,17 @@
 # ============================================================
 #  StoicizmFrame — Content Pipeline v3.15
-#  Интеграция Azure OpenAI + Azure Speech + Foundry
+#  Узел: v3.15_pipeline_foundry_migration
+#  Автор: Владимир + Архитектор Copilot
+#  Дата: 2026-01-12
+#
+#  Назначение:
+#      Главный пайплайн фабрики StoicizmFrame.
+#      Интеграция Azure Foundry + Azure Speech + QC + Gate.
 # ============================================================
 
 from pathlib import Path
 
-from src.ai.azure_openai_client import AzureOpenAIClient
+from src.ai.azure_foundry_client import AzureFoundryClient
 from src.scenario.scenario_builder import ScenarioBuilder
 from src.voice.voice_adapter import VoiceAdapter
 from src.video.layout_composer import LayoutComposer
@@ -32,11 +38,10 @@ class ContentPipeline:
         self.health_layer = HealthLayer()
         self.prepublish_gate = PrePublishGate()
 
-        # === Azure OpenAI Client ===
-        self.client = AzureOpenAIClient(
-            api_key="YOUR_AZURE_OPENAI_KEY",
-            endpoint="YOUR_AZURE_OPENAI_ENDPOINT",
-            deployment="YOUR_AZURE_OPENAI_DEPLOYMENT"
+        # === Foundry Client ===
+        self.client = AzureFoundryClient(
+            endpoint="YOUR_FOUNDRY_ENDPOINT",
+            api_key="YOUR_FOUNDRY_KEY"
         )
 
         # === Azure Speech ===
@@ -45,19 +50,19 @@ class ContentPipeline:
         # === Layout Composer ===
         self.layout = LayoutComposer()
 
-        # === Foundry ===
+        # === Foundry Renderer ===
         self.foundry = FoundryAdapter(
             endpoint="YOUR_FOUNDRY_ENDPOINT",
             api_key="YOUR_FOUNDRY_KEY"
         )
 
-        # Новый ScenarioBuilder
+        # ScenarioBuilder (Foundry)
         self.builder = ScenarioBuilder(self.client)
 
     def process_text(self, text: str, donor_file: str | None = None):
         """
         Полный цикл:
-        1. ScenarioBuilder (Azure OpenAI)
+        1. ScenarioBuilder (Foundry)
         2. Azure Speech
         3. Layout Composer
         4. Foundry Render
@@ -136,8 +141,8 @@ class ContentPipeline:
         # 10. Reporting Layer
         self.pipeline_logger.create_run_report(result)
 
-        print("\\n=== PIPELINE RESULT ===\\n")
+        print("\n=== PIPELINE RESULT ===\n")
         print(result.to_markdown())
-        print("\\n========================\\n")
+        print("\n========================\n")
 
         return result

@@ -1,0 +1,3 @@
+ENTRY_AUDIO=audio\entry.txt
+BODY_AUDIO=audio\body.txt
+LEGACY_AUDIO=audio\legacy.txt

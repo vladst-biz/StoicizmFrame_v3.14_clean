@@ -1,7 +1,7 @@
 from .semantic_qc import QCStatus, SemanticQCResult, SemanticQC
 from .qc_mode import QCMode
 from .structural_qc import StructuralQCResult, StructuralQC
-from .prepublish_gate import PrePublishGate, PrePublishResult
+from .prepublish_gate import PrePublishGate
 
 __all__ = [
     "QCStatus",

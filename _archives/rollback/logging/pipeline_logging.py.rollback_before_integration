@@ -1,0 +1,33 @@
+
+from datetime import datetime
+from pathlib import Path
+
+class PipelineLogger:
+    """Лог-система StoicizmFrame: ошибки, производительность, отчёты."""
+
+    def __init__(self):
+        self.error_log = Path("logs/errors.log")
+        self.perf_log = Path("logs/performance.log")
+        self.reports_dir = Path("reports")
+
+    def log_error(self, message: str):
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.error_log.write_text(f"[{ts}] ERROR: {message}\n", append=True)
+
+    def log_performance(self, stage: str, duration: float):
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.perf_log.write_text(f"[{ts}] {stage}: {duration:.3f}s\n", append=True)
+
+    def create_run_report(self, pipeline_result):
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report = self.reports_dir / f"run_{ts}.md"
+        content = f"""
+## StoicizmFrame Run Report
+### Timestamp: {ts}
+### Donor: {pipeline_result.donor_file}
+### QC Status: {pipeline_result.qc_status}
+### Messages: {pipeline_result.qc_messages}
+### Pending: {pipeline_result.is_pending()}
+"""
+        report.write_text(content)
+

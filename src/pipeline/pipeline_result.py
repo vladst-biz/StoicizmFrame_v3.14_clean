@@ -1,7 +1,13 @@
 # ============================================================
 #  StoicizmFrame — PipelineResult v3.15
-#  Совместимость: Health Layer + QC Layer + PrePublish Gate
-#  Структура C + Pending-механизм + отчётность
+#  Узел: v3.15_pipeline_result_foundation
+#  Автор: Владимир + Архитектор Copilot
+#  Дата: 2026-01-12
+#
+#  Назначение:
+#      Унифицированный результат работы фабрики StoicizmFrame.
+#      Совместимость: Health Layer + QC Layer + PrePublish Gate.
+#      Структура C + Pending-механизм + отчётность.
 # ============================================================
 
 from pathlib import Path
@@ -134,8 +140,3 @@ class PipelineResult:
             self.timestamp,
         ]
         return "\n".join(lines)
-
-
-"""
-ROLLBACK: pipeline_result.py.rollback_before_scene_versioning
-"""
