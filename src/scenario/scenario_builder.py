@@ -1,17 +1,46 @@
 # ============================================================
 #  StoicizmFrame — ScenarioBuilder v3.15
-#  Генерация ENTRY / BODY / LEGACY через Azure OpenAI.
+#  Узел: v3.14_foundry_integration
+#  Автор: Владимир + Архитектор Copilot
+#  Дата: 2026-01-12
+#
+#  Назначение:
+#      Генерация ENTRY / BODY / LEGACY через Azure Foundry.
+#
+#  Изменения:
+#      - Удалён устаревший импорт azure_openai_client
+#      - Добавлен корректный импорт azure_foundry_client
+#      - Обновлён тип клиента в конструкторе
+#      - Обновлены docstring и метки узла
+#
+#  Тег фиксации:
+#      [SCENARIO_BUILDER_v3.15_FOUNDATION]
 # ============================================================
 
 from pathlib import Path
-from src.ai.azure_openai_client import AzureOpenAIClient
+from src.ai.azure_foundry_client import AzureFoundryClient
 from src.scenario.scenario_model import Scenario
 
 
 class ScenarioBuilder:
-    """Генератор сценариев через Azure OpenAI."""
+    """
+    Генератор сценариев StoicizmFrame через Azure Foundry.
 
-    def __init__(self, client: AzureOpenAIClient):
+    Используется:
+        - ContentPipeline
+        - QC-цепочкой
+        - VideoAssembler
+        - VoiceAdapter
+    """
+
+    def __init__(self, client: AzureFoundryClient):
+        """
+        Инициализация генератора сценариев.
+
+        Параметры:
+            client (AzureFoundryClient):
+                Клиент Foundry, обеспечивающий генерацию текста.
+        """
         self.client = client
 
     # ------------------------------------------------------------
@@ -53,6 +82,12 @@ class ScenarioBuilder:
     #  Основной метод сборки сценария
     # ------------------------------------------------------------
     def build(self, user_text: str) -> Scenario:
+        """
+        Полная сборка сценария ENTRY/BODY/LEGACY.
+
+        Возвращает:
+            Scenario — готовая структура сценария.
+        """
         entry = self.generate_entry(user_text)
         body = self.generate_body(user_text)
         legacy = self.generate_legacy(user_text)
