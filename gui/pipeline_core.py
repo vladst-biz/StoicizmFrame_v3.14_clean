@@ -5,34 +5,19 @@ from gui.health_layer import HealthLayer
 class PipelineCore:
     """
     Architectural skeleton of the real pipeline for StoicizmFrame BOX.
-
-    At this stage the class does not perform real work.
-    It defines the structure that will be extended in v3.18+ nodes.
     """
 
     def __init__(self):
-        # Current pipeline status
         self.status = "idle"
-
-        # Execution progress (0–100)
         self.progress = 0
-
-        # Execution log (list of strings)
         self.log = []
 
-        # QC layer (input parameters validation)
         self.qc = QCLayer()
-
-        # Health layer (system and pipeline health)
         self.health = HealthLayer()
 
     # --- QC checks ---
 
     def validate(self, params: dict):
-        """
-        Run QC checks before pipeline execution.
-        Returns QC status: ok / warning / error.
-        """
         qc_status = self.qc.validate_parameters(params)
         self.log.append(f"QC status: {qc_status}")
         return qc_status
@@ -40,13 +25,20 @@ class PipelineCore:
     # --- Health monitoring ---
 
     def get_health_status(self) -> str:
-        """
-        Returns aggregated health status of the pipeline.
-        healthy / degraded / critical
-        """
         status = self.health.get_status()
         self.log.append(f"Health status: {status}")
         return status
+
+    # --- Progress mechanism ---
+
+    def update_progress(self, step: int):
+        """
+        Updates progress by adding 'step'.
+        Ensures progress stays within 0–100.
+        """
+        self.progress = max(0, min(100, self.progress + step))
+        self.log.append(f"Progress updated to {self.progress}%")
+        return self.progress
 
     # --- Pipeline control methods ---
 
