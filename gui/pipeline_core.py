@@ -1,3 +1,6 @@
+from gui.qc_layer import QCLayer
+
+
 class PipelineCore:
     """
     Архитектурный каркас реального пайплайна StoicizmFrame BOX.
@@ -15,6 +18,20 @@ class PipelineCore:
 
         # Лог выполнения (список строк)
         self.log = []
+
+        # QC-слой (проверка параметров)
+        self.qc = QCLayer()
+
+    # --- QC-проверки ---
+
+    def validate(self, params: dict):
+        """
+        Запуск QC-проверок перед выполнением пайплайна.
+        Возвращает статус QC: ok / warning / error.
+        """
+        qc_status = self.qc.validate_parameters(params)
+        self.log.append(f"QC status: {qc_status}")
+        return qc_status
 
     # --- Методы управления пайплайном ---
 
