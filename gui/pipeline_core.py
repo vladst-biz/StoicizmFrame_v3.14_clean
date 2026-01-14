@@ -4,51 +4,51 @@ from gui.health_layer import HealthLayer
 
 class PipelineCore:
     """
-    Архитектурный каркас реального пайплайна StoicizmFrame BOX.
+    Architectural skeleton of the real pipeline for StoicizmFrame BOX.
 
-    На этом этапе класс не выполняет реальную работу.
-    Он определяет структуру, которая будет расширяться в узлах v3.18+.
+    At this stage the class does not perform real work.
+    It defines the structure that will be extended in v3.18+ nodes.
     """
 
     def __init__(self):
-        # Текущее состояние пайплайна
+        # Current pipeline status
         self.status = "idle"
 
-        # Прогресс выполнения (0–100)
+        # Execution progress (0–100)
         self.progress = 0
 
-        # Лог выполнения (список строк)
+        # Execution log (list of strings)
         self.log = []
 
-        # QC-слой (проверка параметров)
+        # QC layer (input parameters validation)
         self.qc = QCLayer()
 
-        # Health-слой (состояние системы и пайплайна)
+        # Health layer (system and pipeline health)
         self.health = HealthLayer()
 
-    # --- QC-проверки ---
+    # --- QC checks ---
 
     def validate(self, params: dict):
         """
-        Запуск QC-проверок перед выполнением пайплайна.
-        Возвращает статус QC: ok / warning / error.
+        Run QC checks before pipeline execution.
+        Returns QC status: ok / warning / error.
         """
         qc_status = self.qc.validate_parameters(params)
         self.log.append(f"QC status: {qc_status}")
         return qc_status
 
-    # --- Health-мониторинг ---
+    # --- Health monitoring ---
 
     def get_health_status(self) -> str:
         """
-        Возвращает агрегированный статус здоровья пайплайна.
+        Returns aggregated health status of the pipeline.
         healthy / degraded / critical
         """
         status = self.health.get_status()
         self.log.append(f"Health status: {status}")
         return status
 
-    # --- Методы управления пайплайном ---
+    # --- Pipeline control methods ---
 
     def start(self):
         self.status = "running"
