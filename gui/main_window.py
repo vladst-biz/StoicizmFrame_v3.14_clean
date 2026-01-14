@@ -9,7 +9,6 @@ from PySide6.QtGui import QPalette, QColor, QFont
 from PySide6.QtCore import Qt
 import sys
 
-# Импорт модулей GUI
 from gui.top_bar import TopBar
 from gui.left_panel import LeftPanel
 from gui.center_panel import CenterPanel
@@ -27,6 +26,7 @@ class StoicizmMainWindow(QMainWindow):
         self._configure_fonts()
 
         self._init_ui()
+        self._connect_signals()
 
     def _configure_geometry(self):
         self.resize(1400, 800)
@@ -55,11 +55,9 @@ class StoicizmMainWindow(QMainWindow):
         central_layout.setContentsMargins(8, 8, 8, 8)
         central_layout.setSpacing(6)
 
-        # Верхняя панель
         self.top_bar = TopBar()
         central_layout.addWidget(self.top_bar)
 
-        # Центральная область
         middle_region = QWidget()
         middle_layout = QHBoxLayout()
         middle_layout.setContentsMargins(0, 6, 0, 0)
@@ -76,12 +74,14 @@ class StoicizmMainWindow(QMainWindow):
         middle_region.setLayout(middle_layout)
         central_layout.addWidget(middle_region, stretch=1)
 
-        # Нижняя панель
         self.status_bar = StatusBar()
         self.setStatusBar(self.status_bar)
 
         central_widget.setLayout(central_layout)
         self.setCentralWidget(central_widget)
+
+    def _connect_signals(self):
+        self.left_panel.direction_selected.connect(self.top_bar.update_direction)
 
 
 def run_box_gui():

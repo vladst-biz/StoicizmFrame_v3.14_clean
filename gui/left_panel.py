@@ -6,17 +6,16 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 
 
 class LeftPanel(QFrame):
     '''
     Левая панель StoicizmFrame BOX GUI.
-    Отвечает за:
-    - выбор направления фабрики
-    - выбор SCENE-типа (в будущем)
-    - отображение списка профилей/режимов
+    Отвечает за выбор направления.
     '''
+
+    direction_selected = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,38 +26,38 @@ class LeftPanel(QFrame):
     def _build_ui(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(8)
+        layout.setSpacing(10)
 
-        # Заголовок панели
         title_label = QLabel("НАПРАВЛЕНИЯ")
         title_label.setStyleSheet("font-size: 12px; font-weight: 600; color: #E0E0E8;")
 
-        # Список направлений (пока статический)
         self.list_widget = QListWidget()
-        self.list_widget.setStyleSheet("color: #D0D0D8;")
-
-        # Базовые направления (будут заменены на динамические)
-        base_directions = [
+        directions = [
             "Социальные сети",
             "Обучение",
-            "Истории / Нарратив",
+            "История / Нарратив",
             "Инженерия",
             "Бизнес",
             "Дизайн",
             "Медиа",
             "Психология",
             "Архитектура",
-            "МастерFrame",
+            "МастерFrame"
         ]
 
-        for direction in base_directions:
-            item = QListWidgetItem(direction)
-            self.list_widget.addItem(item)
+        for d in directions:
+            self.list_widget.addItem(QListWidgetItem(d))
+
+        self.list_widget.currentTextChanged.connect(self._emit_direction)
 
         layout.addWidget(title_label)
-        layout.addWidget(self.list_widget, stretch=1)
+        layout.addWidget(self.list_widget)
+        layout.addStretch(1)
 
         self.setLayout(layout)
+
+    def _emit_direction(self, text: str):
+        self.direction_selected.emit(text)
 
     def _apply_style(self):
         self.setStyleSheet(
@@ -70,25 +69,9 @@ class LeftPanel(QFrame):
             }
             QListWidget {
                 background-color: #1E1E26;
+                color: #D0D0D8;
                 border: 1px solid #2E2E38;
                 border-radius: 4px;
             }
-            QListWidget::item:selected {
-                background-color: #FFA040;
-                color: #000000;
-            }
             """
-        )
-
-    # --- Методы для интеграции с Router ---
-
-    def get_selected_direction(self) -> str:
-        '''Возвращает выбранное направление.'''
-        item = self.list_widget.currentItem()
-        return item.text() if item else None
-
-    def on_direction_changed(self, callback):
-        '''Подписка на изменение направления.'''
-        self.list_widget.currentItemChanged.connect(
-            lambda current, prev: callback(current.text() if current else None)
         )
