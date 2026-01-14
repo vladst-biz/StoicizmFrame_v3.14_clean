@@ -1,4 +1,5 @@
 from gui.qc_layer import QCLayer
+from gui.health_layer import HealthLayer
 
 
 class PipelineCore:
@@ -22,6 +23,9 @@ class PipelineCore:
         # QC-слой (проверка параметров)
         self.qc = QCLayer()
 
+        # Health-слой (состояние системы и пайплайна)
+        self.health = HealthLayer()
+
     # --- QC-проверки ---
 
     def validate(self, params: dict):
@@ -32,6 +36,17 @@ class PipelineCore:
         qc_status = self.qc.validate_parameters(params)
         self.log.append(f"QC status: {qc_status}")
         return qc_status
+
+    # --- Health-мониторинг ---
+
+    def get_health_status(self) -> str:
+        """
+        Возвращает агрегированный статус здоровья пайплайна.
+        healthy / degraded / critical
+        """
+        status = self.health.get_status()
+        self.log.append(f"Health status: {status}")
+        return status
 
     # --- Методы управления пайплайном ---
 
