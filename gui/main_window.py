@@ -81,7 +81,30 @@ class StoicizmMainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
     def _connect_signals(self):
+        # Связка LeftPanel → TopBar (уже была)
         self.left_panel.direction_selected.connect(self.top_bar.update_direction)
+
+        # Связка CenterPanel → RightPanel через MainWindow (вариант C)
+        self.center_panel.start_requested.connect(self._on_start)
+        self.center_panel.restart_requested.connect(self._on_restart)
+        self.center_panel.stop_requested.connect(self._on_stop)
+
+    # --- Обработчики событий CenterPanel ---
+
+    def _on_start(self):
+        self.right_panel.update_status("running")
+        self.right_panel.append_log("Запуск пайплайна…")
+        self.right_panel.update_progress(0)
+
+    def _on_restart(self):
+        self.right_panel.update_status("restarting")
+        self.right_panel.append_log("Перезапуск пайплайна…")
+        self.right_panel.update_progress(0)
+
+    def _on_stop(self):
+        self.right_panel.update_status("stopped")
+        self.right_panel.append_log("Пайплайн остановлен.")
+        self.right_panel.update_progress(0)
 
 
 def run_box_gui():
