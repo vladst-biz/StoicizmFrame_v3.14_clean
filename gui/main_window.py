@@ -14,6 +14,7 @@ from gui.left_panel import LeftPanel
 from gui.center_panel import CenterPanel
 from gui.right_panel import RightPanel
 from gui.status_bar import StatusBar
+from gui.pipeline_stub import PipelineStub   # ← архитектурно важный импорт
 
 
 class StoicizmMainWindow(QMainWindow):
@@ -24,6 +25,9 @@ class StoicizmMainWindow(QMainWindow):
         self._configure_geometry()
         self._configure_palette()
         self._configure_fonts()
+
+        # ← создаём минимальный слой пайплайна
+        self.pipeline = PipelineStub()
 
         self._init_ui()
         self._connect_signals()
@@ -81,10 +85,10 @@ class StoicizmMainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
     def _connect_signals(self):
-        # Связка LeftPanel → TopBar (уже была)
+        # Связка LeftPanel → TopBar
         self.left_panel.direction_selected.connect(self.top_bar.update_direction)
 
-        # Связка CenterPanel → RightPanel через MainWindow (вариант C)
+        # Связка CenterPanel → MainWindow → Pipeline → RightPanel
         self.center_panel.start_requested.connect(self._on_start)
         self.center_panel.restart_requested.connect(self._on_restart)
         self.center_panel.stop_requested.connect(self._on_stop)
@@ -92,17 +96,20 @@ class StoicizmMainWindow(QMainWindow):
     # --- Обработчики событий CenterPanel ---
 
     def _on_start(self):
-        self.right_panel.update_status("running")
+        status = self.pipeline.start()   # ← архитектурно правильный вызов
+        self.right_panel.update_status(status)
         self.right_panel.append_log("Запуск пайплайна…")
         self.right_panel.update_progress(0)
 
     def _on_restart(self):
-        self.right_panel.update_status("restarting")
+        status = self.pipeline.restart()
+        self.right_panel.update_status(status)
         self.right_panel.append_log("Перезапуск пайплайна…")
         self.right_panel.update_progress(0)
 
     def _on_stop(self):
-        self.right_panel.update_status("stopped")
+        status = self.pipeline.stop()
+        self.right_panel.update_status(status)
         self.right_panel.append_log("Пайплайн остановлен.")
         self.right_panel.update_progress(0)
 
