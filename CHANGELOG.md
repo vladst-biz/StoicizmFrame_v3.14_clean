@@ -44,3 +44,10 @@
 - **Сценарии** — ENTRY, LEGACY, CLIENT
 
 📌 Готов к тегированию как 3.14-legacy.
+## v3.18 — GUI/Core/SCENE Stabilization
+
+- Unified GUI lifecycle (TopBar, LeftPanel, CenterPanel, RightPanel, StatusBar, main_window)
+- Normalized PipelineCore (statuses, logging, error handling, parameters)
+- Introduced SCENE architecture (ENTRY → WORK → LEGACY)
+- Prepared SCENE_002 as the main multimodal WORK stage (future: RAG + Foundry + Voice + LayoutComposer)
+

@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import (
-    QWidget,
     QFrame,
     QVBoxLayout,
     QLabel,
@@ -11,10 +10,10 @@ from PySide6.QtCore import Qt, Signal
 
 
 class CenterPanel(QFrame):
-    '''
+    """
     Центральная панель StoicizmFrame BOX GUI.
     Отвечает за параметры и управление пайплайном.
-    '''
+    """
 
     start_requested = Signal()
     restart_requested = Signal()
@@ -23,8 +22,16 @@ class CenterPanel(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("centerPanel")
+
+        # Базовые режимы генерации
+        self._modes = ["Обычный", "Расширенный", "Тестовый"]
+
         self._build_ui()
         self._apply_style()
+
+    # ---------------------------------------------------------
+    # UI
+    # ---------------------------------------------------------
 
     def _build_ui(self):
         layout = QVBoxLayout()
@@ -37,7 +44,7 @@ class CenterPanel(QFrame):
         # Режим генерации
         mode_label = QLabel("Режим генерации:")
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Обычный", "Расширенный", "Тестовый"])
+        self.mode_combo.addItems(self._modes)
 
         # Количество сцен
         scenes_label = QLabel("Количество сцен:")
@@ -71,6 +78,47 @@ class CenterPanel(QFrame):
 
         layout.addStretch(1)
         self.setLayout(layout)
+
+    # ---------------------------------------------------------
+    # API панели
+    # ---------------------------------------------------------
+
+    def get_params(self) -> dict:
+        """Возвращает параметры генерации для пайплайна."""
+        return {
+            "mode": self.mode_combo.currentText(),
+            "scene_count": self.scenes_spin.value()
+        }
+
+    def set_mode(self, mode: str):
+        """Программно выбирает режим."""
+        index = self.mode_combo.findText(mode, Qt.MatchExactly)
+        if index >= 0:
+            self.mode_combo.setCurrentIndex(index)
+
+    def set_scene_count(self, value: int):
+        """Программно задаёт количество сцен."""
+        self.scenes_spin.setValue(value)
+
+    # ---------------------------------------------------------
+    # Управление состоянием кнопок
+    # ---------------------------------------------------------
+
+    def set_running_state(self):
+        """Блокирует кнопки во время выполнения пайплайна."""
+        self.start_button.setEnabled(False)
+        self.restart_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
+
+    def set_idle_state(self):
+        """Разблокирует кнопки после завершения пайплайна."""
+        self.start_button.setEnabled(True)
+        self.restart_button.setEnabled(True)
+        self.stop_button.setEnabled(True)
+
+    # ---------------------------------------------------------
+    # Стиль
+    # ---------------------------------------------------------
 
     def _apply_style(self):
         self.setStyleSheet(

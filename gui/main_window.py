@@ -14,7 +14,7 @@ from gui.left_panel import LeftPanel
 from gui.center_panel import CenterPanel
 from gui.right_panel import RightPanel
 from gui.status_bar import StatusBar
-from gui.pipeline_stub import PipelineStub   # ← архитектурно важный импорт
+from gui.pipeline_adapter import PipelineAdapter
 
 
 class StoicizmMainWindow(QMainWindow):
@@ -26,11 +26,14 @@ class StoicizmMainWindow(QMainWindow):
         self._configure_palette()
         self._configure_fonts()
 
-        # ← создаём минимальный слой пайплайна
-        self.pipeline = PipelineStub()
+        self.pipeline = PipelineAdapter()
 
         self._init_ui()
         self._connect_signals()
+
+    # ---------------------------------------------------------
+    # Конфигурация окна
+    # ---------------------------------------------------------
 
     def _configure_geometry(self):
         self.resize(1400, 800)
@@ -52,6 +55,10 @@ class StoicizmMainWindow(QMainWindow):
     def _configure_fonts(self):
         font = QFont("Segoe UI", 9)
         QApplication.instance().setFont(font)
+
+    # ---------------------------------------------------------
+    # UI
+    # ---------------------------------------------------------
 
     def _init_ui(self):
         central_widget = QWidget(self)
@@ -84,35 +91,77 @@ class StoicizmMainWindow(QMainWindow):
         central_widget.setLayout(central_layout)
         self.setCentralWidget(central_widget)
 
-    def _connect_signals(self):
-        # Связка LeftPanel → TopBar
-        self.left_panel.direction_selected.connect(self.top_bar.update_direction)
+    # ---------------------------------------------------------
+    # Сигналы
+    # ---------------------------------------------------------
 
-        # Связка CenterPanel → MainWindow → Pipeline → RightPanel
+    def _connect_signals(self):
+        # Направление → TopBar + StatusBar
+        self.left_panel.direction_selected.connect(self.top_bar.update_direction)
+        self.left_panel.direction_selected.connect(self.status_bar.update_direction)
+
+        # Управление пайплайном
         self.center_panel.start_requested.connect(self._on_start)
         self.center_panel.restart_requested.connect(self._on_restart)
         self.center_panel.stop_requested.connect(self._on_stop)
 
-    # --- Обработчики событий CenterPanel ---
+        # Режим → StatusBar
+        self.center_panel.mode_combo.currentTextChanged.connect(
+            self.status_bar.update_mode
+        )
+
+    # ---------------------------------------------------------
+    # Унифицированное обновление RightPanel + CenterPanel + StatusBar
+    # ---------------------------------------------------------
+
+    def _update_right_panel(self, result: dict, log_message: str):
+        status = result.get("status", "unknown")
+
+        # RightPanel
+        self.right_panel.update_status(status)
+        self.right_panel.update_qc_status(result.get("qc_status", "—"))
+        self.right_panel.update_health_status(result.get("health", "—"))
+        self.right_panel.append_log(log_message)
+        self.right_panel.update_progress(0)
+
+        # CenterPanel
+        if status.lower() == "running":
+            self.center_panel.set_running_state()
+        else:
+            self.center_panel.set_idle_state()
+
+        # StatusBar
+        self.status_bar.update_pipeline_state(status)
+
+        # UX‑ритм
+        if status.lower() == "running":
+            self.status_bar.update_ux_phase("WORK")
+        elif status.lower() in ("done", "stopped"):
+            self.status_bar.update_ux_phase("LEGACY")
+        else:
+            self.status_bar.update_ux_phase("ENTRY")
+
+    # ---------------------------------------------------------
+    # Обработчики событий CenterPanel
+    # ---------------------------------------------------------
 
     def _on_start(self):
-        status = self.pipeline.start()   # ← архитектурно правильный вызов
-        self.right_panel.update_status(status)
-        self.right_panel.append_log("Запуск пайплайна…")
-        self.right_panel.update_progress(0)
+        gui_params = self.center_panel.get_params()
+        result = self.pipeline.start(gui_params)
+        self._update_right_panel(result, "Запуск пайплайна…")
 
     def _on_restart(self):
-        status = self.pipeline.restart()
-        self.right_panel.update_status(status)
-        self.right_panel.append_log("Перезапуск пайплайна…")
-        self.right_panel.update_progress(0)
+        result = self.pipeline.restart()
+        self._update_right_panel(result, "Перезапуск пайплайна…")
 
     def _on_stop(self):
-        status = self.pipeline.stop()
-        self.right_panel.update_status(status)
-        self.right_panel.append_log("Пайплайн остановлен.")
-        self.right_panel.update_progress(0)
+        result = self.pipeline.stop()
+        self._update_right_panel(result, "Пайплайн остановлен.")
 
+
+# ---------------------------------------------------------
+# Запуск GUI
+# ---------------------------------------------------------
 
 def run_box_gui():
     app = QApplication.instance()
